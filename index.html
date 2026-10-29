@@ -6,28 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#ffffff">
-
-  <title>Pyrmont Weather</title>
+  <title>Pyrmont Weather — BOM</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html, body {
+    body {
       margin: 0;
-      min-height: 100%;
+      padding: 24px;
       background: #fff;
       color: #000;
       font-family: Arial, Helvetica, sans-serif;
     }
 
-    body {
-      padding: 24px;
-    }
-
     main {
-      width: 100%;
       max-width: 900px;
       margin: 0 auto;
     }
@@ -42,8 +34,8 @@
     }
 
     h1 {
-      font-size: clamp(22px, 4vw, 32px);
       margin: 0;
+      font-size: clamp(24px, 4vw, 32px);
     }
 
     #date {
@@ -59,20 +51,20 @@
     .label {
       font-size: 14px;
       font-weight: bold;
-      letter-spacing: 0.06em;
+      letter-spacing: .06em;
       text-transform: uppercase;
     }
 
     #temperature {
-      margin: 16px 0;
-      font-size: clamp(76px, 17vw, 140px);
+      margin: 14px 0;
+      font-size: clamp(80px, 17vw, 140px);
       font-weight: bold;
       line-height: 1.1;
       font-variant-numeric: tabular-nums;
     }
 
     #description {
-      font-size: clamp(22px, 4vw, 32px);
+      font-size: clamp(22px, 4vw, 30px);
       font-weight: bold;
     }
 
@@ -84,7 +76,7 @@
     .details {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
+      gap: 20px 16px;
       padding: 24px 0;
       border-bottom: 2px solid #000;
     }
@@ -96,7 +88,7 @@
     }
 
     .detail-value {
-      font-size: clamp(18px, 3vw, 28px);
+      font-size: clamp(19px, 3vw, 28px);
       font-weight: bold;
       overflow-wrap: anywhere;
       font-variant-numeric: tabular-nums;
@@ -126,26 +118,19 @@
       color: #000;
       font-size: 15px;
       font-weight: bold;
-      cursor: pointer;
     }
 
-    button:disabled {
-      opacity: 0.6;
-    }
+    button:disabled { opacity: .6; }
 
     @media (max-width: 420px) {
-      body {
-        padding: 16px;
-      }
+      body { padding: 16px; }
 
       header {
         align-items: flex-start;
         flex-direction: column;
       }
 
-      #date {
-        text-align: left;
-      }
+      #date { text-align: left; }
 
       footer {
         align-items: flex-start;
@@ -154,9 +139,7 @@
     }
 
     @media (orientation: landscape) and (min-width: 600px) {
-      body {
-        padding: 20px 28px;
-      }
+      body { padding: 20px 28px; }
 
       main {
         display: grid;
@@ -165,19 +148,13 @@
         align-items: start;
       }
 
-      header, footer {
-        grid-column: 1 / -1;
-      }
+      header, footer { grid-column: 1 / -1; }
 
       .current {
         align-self: stretch;
         display: flex;
         flex-direction: column;
         justify-content: center;
-      }
-
-      .details {
-        align-self: start;
       }
     }
   </style>
@@ -187,13 +164,13 @@
 <main>
   <header>
     <h1>Pyrmont Weather</h1>
-    <div id="date">Weather report</div>
+    <div id="date">Waiting for observations</div>
   </header>
 
   <section class="current">
     <div class="label">Current temperature</div>
     <div id="temperature">--°C</div>
-    <div id="description">Loading weather...</div>
+    <div id="description">Loading BOM observations...</div>
     <div id="feels">Feels like --°C</div>
   </section>
 
@@ -204,119 +181,115 @@
     </div>
 
     <div>
-      <div class="detail-label">Wind speed</div>
-      <div class="detail-value" id="wind">-- km/h</div>
+      <div class="detail-label">Wind</div>
+      <div class="detail-value" id="wind">--</div>
     </div>
 
     <div>
-      <div class="detail-label">Rain today</div>
+      <div class="detail-label">Rain since 9 am</div>
       <div class="detail-value" id="rain">-- mm</div>
     </div>
   </section>
 
   <footer>
     <div id="status" role="status" aria-live="polite">
-      Starting weather dashboard...
+      Connecting to BOM...
     </div>
-    <button id="refreshButton" type="button">
-      Refresh weather
-    </button>
+    <button id="refreshButton" type="button">Refresh</button>
   </footer>
 </main>
 
 <script>
-  // ------------------------------------------
-  // SETTINGS
-  // ------------------------------------------
+  const BOM_URL =
+    "https://www.bom.gov.au/fwo/IDN60801/IDN60801.94768.json";
 
-  const CITY = "Pyrmont";
-  const LATITUDE = -33.8696;
-  const LONGITUDE = 151.1945;
-
+  const CACHE_KEY = "pyrmont-bom-weather-v1";
   const REFRESH_INTERVAL = 15 * 60 * 1000;
-  const CACHE_KEY = "pyrmont-weather-cache-v1";
-
-  const WEATHER_URL =
-    "https://api.open-meteo.com/v1/forecast";
 
   let loading = false;
   let lastUpdated = null;
-  let lastWeather = null;
+  let lastObservation = null;
   let lastError = false;
 
   const $ = id => document.getElementById(id);
 
-  // ------------------------------------------
-  // WEATHER DESCRIPTION
-  // ------------------------------------------
-
-  function weatherDescription(code) {
-    if (code === 0) return "Clear sky";
-    if (code === 1) return "Mainly clear";
-    if (code === 2) return "Partly cloudy";
-    if (code === 3) return "Overcast";
-    if ([45, 48].includes(code)) return "Fog";
-    if ([51, 53, 55, 56, 57].includes(code))
-      return "Drizzle";
-    if ([61, 63, 65, 66, 67].includes(code))
-      return "Rain";
-    if ([71, 73, 75, 77].includes(code))
-      return "Snow";
-    if ([80, 81, 82].includes(code))
-      return "Rain showers";
-    if ([85, 86].includes(code))
-      return "Snow showers";
-    if ([95, 96, 99].includes(code))
-      return "Thunderstorm";
-
-    return "Conditions unavailable";
+  function valid(value) {
+    return value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      value !== "-";
   }
 
-  function numberWithUnit(value, unit) {
-    if (value === null || value === undefined ||
-        !Number.isFinite(Number(value))) {
-      return "—";
-    }
-
-    return `${Math.round(Number(value))}${unit}`;
+  function showValue(value, unit = "") {
+    return valid(value) ? `${value}${unit}` : "—";
   }
 
-  function formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString(
-      "en-AU",
-      { hour: "2-digit", minute: "2-digit" }
+  function formatDateTime(value) {
+    if (!value) return "Time unavailable";
+
+    // BOM commonly supplies DD/MM/YYYY HH:mm:ss.
+    const match = String(value).match(
+      /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/
     );
-  }
 
-  function formatDate(dateString) {
-    if (!dateString) return "Date unavailable";
+    if (match) {
+      const [, day, month, year, hour, minute] = match;
 
-    // Open-Meteo returns the date in the location's timezone.
-    const parts = dateString.split("-").map(Number);
+      const date = new Date(
+        Number(year), Number(month) - 1, Number(day),
+        Number(hour), Number(minute)
+      );
 
-    if (parts.length !== 3 || parts.some(n => !n)) {
-      return dateString;
+      return date.toLocaleString("en-AU", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
     }
 
-    const date = new Date(parts[0], parts[1] - 1, parts[2]);
-
-    return date.toLocaleDateString("en-AU", {
-      weekday: "long",
-      day: "numeric",
-      month: "long"
-    });
+    return value;
   }
 
-  // ------------------------------------------
-  // SAVE AND LOAD CACHED WEATHER
-  // ------------------------------------------
+  function displayObservation(observation) {
+    $("temperature").textContent =
+      showValue(observation.air_temp, "°C");
+
+    $("feels").textContent =
+      `Feels like ${showValue(observation.apparent_t, "°C")}`;
+
+    $("humidity").textContent =
+      showValue(observation.rel_hum, "%");
+
+    const direction = valid(observation.wind_dir)
+      ? observation.wind_dir
+      : "";
+
+    const speed = valid(observation.wind_spd_kmh)
+      ? `${observation.wind_spd_kmh} km/h`
+      : "";
+
+    $("wind").textContent =
+      [direction, speed].filter(Boolean).join(" ") || "—";
+
+    $("rain").textContent =
+      showValue(observation.rain_trace, " mm");
+
+    $("description").textContent =
+      valid(observation.weather)
+        ? observation.weather
+        : "Station observations";
+
+    $("date").textContent =
+      formatDateTime(observation.local_date_time);
+  }
 
   function saveCache(data) {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     } catch (error) {
-      // Storage may be disabled or full.
-      console.warn("Weather cache could not be saved.", error);
+      console.warn("Could not save weather cache", error);
     }
   }
 
@@ -327,79 +300,44 @@
 
       const data = JSON.parse(saved);
 
-      if (!data.weather || !data.updatedAt) return null;
+      if (!data.observation || !data.savedAt) return null;
 
       return data;
-    } catch (error) {
-      console.warn("Weather cache could not be read.", error);
+    } catch {
       return null;
     }
   }
 
-  // ------------------------------------------
-  // DISPLAY WEATHER
-  // ------------------------------------------
-
-  function displayWeather(weather) {
-    $("date").textContent = formatDate(weather.date);
-
-    $("temperature").textContent =
-      numberWithUnit(weather.temperature, "°C");
-
-    $("description").textContent =
-      weather.description || "Conditions unavailable";
-
-    $("feels").textContent =
-      `Feels like ${numberWithUnit(weather.feelsLike, "°C")}`;
-
-    $("humidity").textContent =
-      numberWithUnit(weather.humidity, "%");
-
-    $("wind").textContent =
-      numberWithUnit(weather.wind, " km/h");
-
-    $("rain").textContent =
-      weather.rain == null
-        ? "—"
-        : `${Number(weather.rain).toFixed(1)} mm`;
-  }
-
   function updateStatus() {
-    const status = $("status");
-
     if (!lastUpdated) {
-      status.textContent = lastError
-        ? "Weather unavailable. Waiting to retry."
-        : "Waiting for weather data...";
+      $("status").textContent = lastError
+        ? "BOM unavailable. Waiting to retry."
+        : "Waiting for observations...";
       return;
     }
 
-    const time = formatTime(lastUpdated);
+    const time = new Date(lastUpdated).toLocaleTimeString(
+      "en-AU",
+      { hour: "2-digit", minute: "2-digit" }
+    );
+
     const age = Date.now() - lastUpdated;
 
-    let freshness;
+    let label = `Last fetched ${time}`;
 
-    if (age < 2 * 60 * 60 * 1000) {
-      freshness = "Last updated";
-    } else {
-      freshness = "STALE DATA · Last updated";
+    if (age > 2 * 60 * 60 * 1000) {
+      label = `STALE DATA · ${label}`;
     }
 
     if (!navigator.onLine) {
-      status.textContent =
-        `OFFLINE · ${freshness} ${time}`;
+      $("status").textContent = `OFFLINE · ${label}`;
     } else if (lastError) {
-      status.textContent =
-        `UPDATE FAILED · Showing saved weather · ${freshness} ${time}`;
+      $("status").textContent =
+        `UPDATE FAILED · Showing saved data · ${label}`;
     } else {
-      status.textContent =
-        `${freshness} ${time} · Open-Meteo`;
+      $("status").textContent = `BOM · ${label}`;
     }
   }
-
-  // ------------------------------------------
-  // FETCH FRESH WEATHER
-  // ------------------------------------------
 
   async function loadWeather() {
     if (loading) return;
@@ -412,89 +350,54 @@
     loading = true;
     $("refreshButton").disabled = true;
 
-    if (lastUpdated) {
-      $("status").textContent = "Checking for updated weather...";
-    } else {
-      $("status").textContent = "Downloading weather...";
-    }
+    $("status").textContent = lastUpdated
+      ? "Checking BOM for new observations..."
+      : "Loading BOM observations...";
 
-    // A timeout prevents a stuck request from blocking retries.
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      20000
-    );
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     try {
-      const params = new URLSearchParams({
-        latitude: LATITUDE,
-        longitude: LONGITUDE,
-        current: [
-          "temperature_2m",
-          "relative_humidity_2m",
-          "apparent_temperature",
-          "weather_code",
-          "wind_speed_10m"
-        ].join(","),
-        daily: "precipitation_sum",
-        forecast_days: "1",
-        timezone: "Australia/Sydney"
+      const response = await fetch(BOM_URL, {
+        cache: "no-store",
+        signal: controller.signal
       });
 
-      const response = await fetch(
-        `${WEATHER_URL}?${params}`,
-        {
-          signal: controller.signal,
-          cache: "no-store"
-        }
-      );
-
       if (!response.ok) {
-        throw new Error(`Weather API returned ${response.status}`);
+        throw new Error(`BOM returned HTTP ${response.status}`);
       }
 
-      const data = await response.json();
-      const current = data.current;
+      const json = await response.json();
+      const observations = json?.observations?.data;
+      const observation = observations?.[0];
 
-      if (!current ||
-          current.temperature_2m == null ||
-          !data.daily?.time?.[0]) {
-        throw new Error("Weather response was incomplete.");
+      if (!observation || !valid(observation.air_temp)) {
+        throw new Error("No valid station observation found.");
       }
 
-      const weather = {
-        temperature: current.temperature_2m,
-        feelsLike: current.apparent_temperature,
-        humidity: current.relative_humidity_2m,
-        wind: current.wind_speed_10m,
-        rain: data.daily.precipitation_sum?.[0] ?? null,
-        description: weatherDescription(current.weather_code),
-        date: data.daily.time[0]
-      };
-
-      const updatedAt = Date.now();
-
-      // Only replace the display after a successful response.
-      lastWeather = weather;
-      lastUpdated = updatedAt;
+      // Do not replace valid data until the response is checked.
+      lastObservation = observation;
+      lastUpdated = Date.now();
       lastError = false;
 
-      displayWeather(weather);
+      displayObservation(observation);
 
       saveCache({
-        weather,
-        updatedAt
+        observation,
+        savedAt: lastUpdated
       });
 
       updateStatus();
 
     } catch (error) {
-      console.warn("Weather update failed:", error);
-
-      // Preserve the previous readings.
+      console.error("BOM weather error:", error);
       lastError = true;
       updateStatus();
 
+      if (!lastObservation) {
+        $("description").textContent =
+          "Unable to retrieve BOM observations";
+      }
     } finally {
       clearTimeout(timeout);
       loading = false;
@@ -502,40 +405,25 @@
     }
   }
 
-  // ------------------------------------------
-  // STARTUP
-  // ------------------------------------------
-
   function startDashboard() {
     const cached = readCache();
 
     if (cached) {
-      lastWeather = cached.weather;
-      lastUpdated = cached.updatedAt;
+      lastObservation = cached.observation;
+      lastUpdated = cached.savedAt;
 
-      displayWeather(lastWeather);
+      displayObservation(lastObservation);
       updateStatus();
     }
 
-    // Try to get current data. If offline, cached readings remain.
     loadWeather();
   }
 
-  $("refreshButton").addEventListener(
-    "click",
-    loadWeather
-  );
+  $("refreshButton").addEventListener("click", loadWeather);
 
-  // Retry automatically when connectivity returns.
-  window.addEventListener("online", () => {
-    loadWeather();
-  });
+  window.addEventListener("online", loadWeather);
+  window.addEventListener("offline", updateStatus);
 
-  window.addEventListener("offline", () => {
-    updateStatus();
-  });
-
-  // Refresh weather every 15 minutes.
   setInterval(loadWeather, REFRESH_INTERVAL);
 
   startDashboard();
