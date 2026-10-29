@@ -1,0 +1,544 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#ffffff">
+
+  <title>Pyrmont Weather</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #fff;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      padding: 24px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      border-bottom: 3px solid #000;
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(22px, 4vw, 32px);
+      margin: 0;
+    }
+
+    #date {
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .current {
+      padding: 24px 0;
+      border-bottom: 2px solid #000;
+    }
+
+    .label {
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #temperature {
+      margin: 16px 0;
+      font-size: clamp(76px, 17vw, 140px);
+      font-weight: bold;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #description {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: bold;
+    }
+
+    #feels {
+      margin-top: 12px;
+      font-size: 18px;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      padding: 24px 0;
+      border-bottom: 2px solid #000;
+    }
+
+    .detail-label {
+      margin-bottom: 10px;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .detail-value {
+      font-size: clamp(18px, 3vw, 28px);
+      font-weight: bold;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-top: 18px;
+      font-size: 13px;
+    }
+
+    #status {
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    button {
+      flex-shrink: 0;
+      min-height: 48px;
+      padding: 12px 16px;
+      border: 2px solid #000;
+      border-radius: 0;
+      background: #fff;
+      color: #000;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 16px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      #date {
+        text-align: left;
+      }
+
+      footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (orientation: landscape) and (min-width: 600px) {
+      body {
+        padding: 20px 28px;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        column-gap: 28px;
+        align-items: start;
+      }
+
+      header, footer {
+        grid-column: 1 / -1;
+      }
+
+      .current {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .details {
+        align-self: start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <header>
+    <h1>Pyrmont Weather</h1>
+    <div id="date">Weather report</div>
+  </header>
+
+  <section class="current">
+    <div class="label">Current temperature</div>
+    <div id="temperature">--°C</div>
+    <div id="description">Loading weather...</div>
+    <div id="feels">Feels like --°C</div>
+  </section>
+
+  <section class="details">
+    <div>
+      <div class="detail-label">Humidity</div>
+      <div class="detail-value" id="humidity">--%</div>
+    </div>
+
+    <div>
+      <div class="detail-label">Wind speed</div>
+      <div class="detail-value" id="wind">-- km/h</div>
+    </div>
+
+    <div>
+      <div class="detail-label">Rain today</div>
+      <div class="detail-value" id="rain">-- mm</div>
+    </div>
+  </section>
+
+  <footer>
+    <div id="status" role="status" aria-live="polite">
+      Starting weather dashboard...
+    </div>
+    <button id="refreshButton" type="button">
+      Refresh weather
+    </button>
+  </footer>
+</main>
+
+<script>
+  // ------------------------------------------
+  // SETTINGS
+  // ------------------------------------------
+
+  const CITY = "Pyrmont";
+  const LATITUDE = -33.8696;
+  const LONGITUDE = 151.1945;
+
+  const REFRESH_INTERVAL = 15 * 60 * 1000;
+  const CACHE_KEY = "pyrmont-weather-cache-v1";
+
+  const WEATHER_URL =
+    "https://api.open-meteo.com/v1/forecast";
+
+  let loading = false;
+  let lastUpdated = null;
+  let lastWeather = null;
+  let lastError = false;
+
+  const $ = id => document.getElementById(id);
+
+  // ------------------------------------------
+  // WEATHER DESCRIPTION
+  // ------------------------------------------
+
+  function weatherDescription(code) {
+    if (code === 0) return "Clear sky";
+    if (code === 1) return "Mainly clear";
+    if (code === 2) return "Partly cloudy";
+    if (code === 3) return "Overcast";
+    if ([45, 48].includes(code)) return "Fog";
+    if ([51, 53, 55, 56, 57].includes(code))
+      return "Drizzle";
+    if ([61, 63, 65, 66, 67].includes(code))
+      return "Rain";
+    if ([71, 73, 75, 77].includes(code))
+      return "Snow";
+    if ([80, 81, 82].includes(code))
+      return "Rain showers";
+    if ([85, 86].includes(code))
+      return "Snow showers";
+    if ([95, 96, 99].includes(code))
+      return "Thunderstorm";
+
+    return "Conditions unavailable";
+  }
+
+  function numberWithUnit(value, unit) {
+    if (value === null || value === undefined ||
+        !Number.isFinite(Number(value))) {
+      return "—";
+    }
+
+    return `${Math.round(Number(value))}${unit}`;
+  }
+
+  function formatTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString(
+      "en-AU",
+      { hour: "2-digit", minute: "2-digit" }
+    );
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return "Date unavailable";
+
+    // Open-Meteo returns the date in the location's timezone.
+    const parts = dateString.split("-").map(Number);
+
+    if (parts.length !== 3 || parts.some(n => !n)) {
+      return dateString;
+    }
+
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    return date.toLocaleDateString("en-AU", {
+      weekday: "long",
+      day: "numeric",
+      month: "long"
+    });
+  }
+
+  // ------------------------------------------
+  // SAVE AND LOAD CACHED WEATHER
+  // ------------------------------------------
+
+  function saveCache(data) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    } catch (error) {
+      // Storage may be disabled or full.
+      console.warn("Weather cache could not be saved.", error);
+    }
+  }
+
+  function readCache() {
+    try {
+      const saved = localStorage.getItem(CACHE_KEY);
+      if (!saved) return null;
+
+      const data = JSON.parse(saved);
+
+      if (!data.weather || !data.updatedAt) return null;
+
+      return data;
+    } catch (error) {
+      console.warn("Weather cache could not be read.", error);
+      return null;
+    }
+  }
+
+  // ------------------------------------------
+  // DISPLAY WEATHER
+  // ------------------------------------------
+
+  function displayWeather(weather) {
+    $("date").textContent = formatDate(weather.date);
+
+    $("temperature").textContent =
+      numberWithUnit(weather.temperature, "°C");
+
+    $("description").textContent =
+      weather.description || "Conditions unavailable";
+
+    $("feels").textContent =
+      `Feels like ${numberWithUnit(weather.feelsLike, "°C")}`;
+
+    $("humidity").textContent =
+      numberWithUnit(weather.humidity, "%");
+
+    $("wind").textContent =
+      numberWithUnit(weather.wind, " km/h");
+
+    $("rain").textContent =
+      weather.rain == null
+        ? "—"
+        : `${Number(weather.rain).toFixed(1)} mm`;
+  }
+
+  function updateStatus() {
+    const status = $("status");
+
+    if (!lastUpdated) {
+      status.textContent = lastError
+        ? "Weather unavailable. Waiting to retry."
+        : "Waiting for weather data...";
+      return;
+    }
+
+    const time = formatTime(lastUpdated);
+    const age = Date.now() - lastUpdated;
+
+    let freshness;
+
+    if (age < 2 * 60 * 60 * 1000) {
+      freshness = "Last updated";
+    } else {
+      freshness = "STALE DATA · Last updated";
+    }
+
+    if (!navigator.onLine) {
+      status.textContent =
+        `OFFLINE · ${freshness} ${time}`;
+    } else if (lastError) {
+      status.textContent =
+        `UPDATE FAILED · Showing saved weather · ${freshness} ${time}`;
+    } else {
+      status.textContent =
+        `${freshness} ${time} · Open-Meteo`;
+    }
+  }
+
+  // ------------------------------------------
+  // FETCH FRESH WEATHER
+  // ------------------------------------------
+
+  async function loadWeather() {
+    if (loading) return;
+
+    if (!navigator.onLine) {
+      updateStatus();
+      return;
+    }
+
+    loading = true;
+    $("refreshButton").disabled = true;
+
+    if (lastUpdated) {
+      $("status").textContent = "Checking for updated weather...";
+    } else {
+      $("status").textContent = "Downloading weather...";
+    }
+
+    // A timeout prevents a stuck request from blocking retries.
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      20000
+    );
+
+    try {
+      const params = new URLSearchParams({
+        latitude: LATITUDE,
+        longitude: LONGITUDE,
+        current: [
+          "temperature_2m",
+          "relative_humidity_2m",
+          "apparent_temperature",
+          "weather_code",
+          "wind_speed_10m"
+        ].join(","),
+        daily: "precipitation_sum",
+        forecast_days: "1",
+        timezone: "Australia/Sydney"
+      });
+
+      const response = await fetch(
+        `${WEATHER_URL}?${params}`,
+        {
+          signal: controller.signal,
+          cache: "no-store"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Weather API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      const current = data.current;
+
+      if (!current ||
+          current.temperature_2m == null ||
+          !data.daily?.time?.[0]) {
+        throw new Error("Weather response was incomplete.");
+      }
+
+      const weather = {
+        temperature: current.temperature_2m,
+        feelsLike: current.apparent_temperature,
+        humidity: current.relative_humidity_2m,
+        wind: current.wind_speed_10m,
+        rain: data.daily.precipitation_sum?.[0] ?? null,
+        description: weatherDescription(current.weather_code),
+        date: data.daily.time[0]
+      };
+
+      const updatedAt = Date.now();
+
+      // Only replace the display after a successful response.
+      lastWeather = weather;
+      lastUpdated = updatedAt;
+      lastError = false;
+
+      displayWeather(weather);
+
+      saveCache({
+        weather,
+        updatedAt
+      });
+
+      updateStatus();
+
+    } catch (error) {
+      console.warn("Weather update failed:", error);
+
+      // Preserve the previous readings.
+      lastError = true;
+      updateStatus();
+
+    } finally {
+      clearTimeout(timeout);
+      loading = false;
+      $("refreshButton").disabled = false;
+    }
+  }
+
+  // ------------------------------------------
+  // STARTUP
+  // ------------------------------------------
+
+  function startDashboard() {
+    const cached = readCache();
+
+    if (cached) {
+      lastWeather = cached.weather;
+      lastUpdated = cached.updatedAt;
+
+      displayWeather(lastWeather);
+      updateStatus();
+    }
+
+    // Try to get current data. If offline, cached readings remain.
+    loadWeather();
+  }
+
+  $("refreshButton").addEventListener(
+    "click",
+    loadWeather
+  );
+
+  // Retry automatically when connectivity returns.
+  window.addEventListener("online", () => {
+    loadWeather();
+  });
+
+  window.addEventListener("offline", () => {
+    updateStatus();
+  });
+
+  // Refresh weather every 15 minutes.
+  setInterval(loadWeather, REFRESH_INTERVAL);
+
+  startDashboard();
+</script>
+</body>
+</html>
