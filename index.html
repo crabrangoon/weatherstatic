@@ -1,597 +1,721 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#ffffff">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#ffffff">
+<title>Pyrmont Weather</title>
 
-  <title>Pyrmont Weather</title>
+<style>
+* {
+  box-sizing: border-box;
+}
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+}
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background: #fff;
-      color: #000;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+body {
+  padding: 24px;
+}
 
-    body {
-      padding: 24px;
-    }
+main {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
 
-    main {
-      width: 100%;
-      max-width: 900px;
-      margin: 0 auto;
-    }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  border-bottom: 3px solid #000;
+  padding-bottom: 16px;
+}
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      border-bottom: 3px solid #000;
-      padding-bottom: 16px;
-    }
+h1 {
+  font-size: 30px;
+  margin: 0;
+}
 
-    h1 {
-      font-size: clamp(22px, 4vw, 32px);
-      margin: 0;
-    }
+#date {
+  font-size: 14px;
+  text-align: right;
+}
 
-    #date {
-      font-size: 14px;
-      text-align: right;
-    }
+.current {
+  padding: 24px 0;
+  border-bottom: 2px solid #000;
+}
 
-    .current {
-      padding: 24px 0;
-      border-bottom: 2px solid #000;
-    }
+.label {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
-    .label {
-      font-size: 14px;
-      font-weight: bold;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
+#temperature {
+  margin: 16px 0;
+  font-size: 110px;
+  font-weight: bold;
+  line-height: 1.1;
+}
 
-    #temperature {
-      margin: 16px 0;
-      font-size: clamp(76px, 17vw, 140px);
-      font-weight: bold;
-      line-height: 1.1;
-      font-variant-numeric: tabular-nums;
-    }
+#description {
+  font-size: 28px;
+  font-weight: bold;
+}
 
-    #description {
-      font-size: clamp(22px, 4vw, 32px);
-      font-weight: bold;
-    }
+#feels {
+  margin-top: 12px;
+  font-size: 18px;
+}
 
-    #feels {
-      margin-top: 12px;
-      font-size: 18px;
-    }
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 24px 0;
+  border-bottom: 2px solid #000;
+}
 
-    .details {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      padding: 24px 0;
-      border-bottom: 2px solid #000;
-    }
+.details > div {
+  width: 33.333%;
+  padding-right: 12px;
+  margin-bottom: 12px;
+}
 
-    .detail-label {
-      margin-bottom: 10px;
-      font-size: 13px;
-      text-transform: uppercase;
-    }
+.detail-label {
+  margin-bottom: 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+}
 
-    .detail-value {
-      font-size: clamp(18px, 3vw, 28px);
-      font-weight: bold;
-      overflow-wrap: anywhere;
-      font-variant-numeric: tabular-nums;
-    }
+.detail-value {
+  font-size: 26px;
+  font-weight: bold;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
 
-    footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding-top: 18px;
-      font-size: 13px;
-    }
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 18px;
+  font-size: 13px;
+}
 
-    #status {
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-    }
+#status {
+  line-height: 1.6;
+  word-wrap: break-word;
+  flex: 1;
+  min-width: 180px;
+}
 
-    button {
-      flex-shrink: 0;
-      min-height: 48px;
-      padding: 12px 16px;
-      border: 2px solid #000;
-      border-radius: 0;
-      background: #fff;
-      color: #000;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+button {
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    button:disabled {
-      opacity: 0.6;
-    }
+button:disabled {
+  opacity: 0.6;
+}
 
-    @media (max-width: 420px) {
-      body {
-        padding: 16px;
-      }
+@media (max-width: 500px) {
+  body {
+    padding: 16px;
+  }
 
-      header {
-        align-items: flex-start;
-        flex-direction: column;
-      }
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-      #date {
-        text-align: left;
-      }
+  #date {
+    text-align: left;
+  }
 
-      footer {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-    }
+  #temperature {
+    font-size: 76px;
+  }
 
-    @media (orientation: landscape) and (min-width: 600px) {
-      body {
-        padding: 20px 28px;
-      }
+  #description {
+    font-size: 22px;
+  }
 
-      main {
-        display: grid;
-        grid-template-columns: 1.4fr 1fr;
-        column-gap: 28px;
-        align-items: start;
-      }
+  .details > div {
+    width: 50%;
+  }
 
-      header, footer {
-        grid-column: 1 / -1;
-      }
+  footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 
-      .current {
-        align-self: stretch;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
+  button {
+    width: 100%;
+  }
+}
 
-      .details {
-        align-self: start;
-      }
-    }
-  </style>
+@media (orientation: landscape) and (min-width: 600px) {
+  body {
+    padding: 20px 28px;
+  }
+
+  main {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  header, footer {
+    width: 100%;
+  }
+
+  header {
+    margin-bottom: 0;
+  }
+
+  .current {
+    width: 57%;
+    border-bottom: 0;
+    border-right: 2px solid #000;
+    padding-right: 24px;
+  }
+
+  .details {
+    width: 40%;
+    align-content: flex-start;
+    border-bottom: 0;
+  }
+
+  .details > div {
+    width: 100%;
+  }
+}
+</style>
 </head>
 
 <body>
+
 <main>
-  <header>
-    <h1>Pyrmont Weather</h1>
-    <div id="date">Weather report</div>
-  </header>
 
-  <section class="current">
-    <div class="label">Current temperature</div>
-    <div id="temperature">--°C</div>
-    <div id="description">Loading weather...</div>
-    <div id="feels">Feels like --°C</div>
-  </section>
+<header>
+  <h1>Pyrmont Weather</h1>
+  <div id="date">Weather report</div>
+</header>
 
-  <section class="details">
-    <div>
-      <div class="detail-label">Humidity</div>
-      <div class="detail-value" id="humidity">--%</div>
-    </div>
+<section class="current">
+  <div class="label">Current temperature</div>
+  <div id="temperature">--°C</div>
+  <div id="description">Loading weather...</div>
+  <div id="feels">Feels like --°C</div>
+</section>
 
-    <div>
-      <div class="detail-label">Wind speed</div>
-      <div class="detail-value" id="wind">-- km/h</div>
-    </div>
+<section class="details">
 
-    <div>
-      <div class="detail-label">Rain (last hour)</div>
-      <div class="detail-value" id="rain">-- mm</div>
-    </div>
-  </section>
+  <div>
+    <div class="detail-label">Humidity</div>
+    <div class="detail-value" id="humidity">--%</div>
+  </div>
 
-  <footer>
-    <div id="status" role="status" aria-live="polite">
-      Starting weather dashboard...
-    </div>
-    <button id="refreshButton" type="button">
-      Refresh weather
-    </button>
-  </footer>
+  <div>
+    <div class="detail-label">Wind speed</div>
+    <div class="detail-value" id="wind">-- km/h</div>
+  </div>
+
+  <div>
+    <div class="detail-label">Rain (last hour)</div>
+    <div class="detail-value" id="rain">-- mm</div>
+  </div>
+
+</section>
+
+<footer>
+  <div id="status" role="status">
+    Starting weather dashboard...
+  </div>
+
+  <button id="refreshButton" type="button">
+    Refresh weather
+  </button>
+</footer>
+
 </main>
 
 <script>
-  // ------------------------------------------
-  // SETTINGS
-  // ------------------------------------------
 
-  const CITY = "Pyrmont";
-  const LATITUDE = -33.8696;
-  const LONGITUDE = 151.1945;
+// ==========================================
+// SETTINGS
+// ==========================================
 
-  // Refresh every 30 minutes.
-  const REFRESH_INTERVAL = 30 * 60 * 1000;
+var CITY = "Pyrmont";
+var LATITUDE = -33.8696;
+var LONGITUDE = 151.1945;
 
-  const CACHE_KEY = "pyrmont-weather-cache-v2";
+var REFRESH_INTERVAL = 30 * 60 * 1000;
+var CACHE_KEY = "pyrmont-weather-cache-v3";
 
-  // Replace with your OpenWeather API key.
-  const API_KEY = "d77655924cd10b1fb36c07181a9b49f4";
+// Replace with your OpenWeather API key.
+var API_KEY = "d77655924cd10b1fb36c07181a9b49f4";
 
-  const WEATHER_URL =
-    "https://api.openweathermap.org/data/2.5/weather";
+var WEATHER_URL =
+  "https://api.openweathermap.org/data/2.5/weather";
 
-  let loading = false;
-  let lastUpdated = null;
-  let lastWeather = null;
-  let lastError = false;
-  let refreshTimer = null;
+var loading = false;
+var lastUpdated = null;
+var lastWeather = null;
+var lastError = false;
+var refreshTimer = null;
 
-  const $ = id => document.getElementById(id);
+function $(id) {
+  return document.getElementById(id);
+}
 
-  // ------------------------------------------
-  // HELPERS
-  // ------------------------------------------
+// ==========================================
+// HELPERS
+// ==========================================
 
-  function numberWithUnit(value, unit) {
-    if (value === null || value === undefined ||
-        !Number.isFinite(Number(value))) {
-      return "—";
-    }
-
-    return `${Math.round(Number(value))}${unit}`;
+function numberWithUnit(value, unit) {
+  if (value === null || value === undefined ||
+      isNaN(Number(value))) {
+    return "—";
   }
 
-  function formatTime(timestamp) {
-    return new Date(timestamp).toLocaleTimeString(
-      "en-AU",
-      { hour: "2-digit", minute: "2-digit" }
+  return Math.round(Number(value)) + unit;
+}
+
+function formatTime(timestamp) {
+  var date = new Date(timestamp);
+
+  return date.toLocaleTimeString("en-AU", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatDate(timestamp, timezoneOffset) {
+  if (!timestamp) {
+    return "Date unavailable";
+  }
+
+  var date = new Date(
+    (timestamp + timezoneOffset) * 1000
+  );
+
+  var weekdays = [
+    "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday"
+  ];
+
+  var months = [
+    "January", "February", "March", "April",
+    "May", "June", "July", "August",
+    "September", "October", "November", "December"
+  ];
+
+  return weekdays[date.getUTCDay()] + ", " +
+    date.getUTCDate() + " " +
+    months[date.getUTCMonth()];
+}
+
+function weatherDescription(description) {
+  if (!description) {
+    return "Conditions unavailable";
+  }
+
+  return description.charAt(0).toUpperCase() +
+    description.substring(1);
+}
+
+// ==========================================
+// CACHE
+// ==========================================
+
+function saveCache(data) {
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify(data)
     );
+  } catch (error) {
+    console.log("Could not save weather cache.");
   }
+}
 
-  function formatDate(timestamp, timezoneOffset) {
-    if (!timestamp) return "Date unavailable";
+function readCache() {
+  try {
+    var saved = localStorage.getItem(CACHE_KEY);
 
-    // OpenWeather provides a Unix timestamp and UTC offset.
-    const localDate = new Date(
-      (timestamp + timezoneOffset) * 1000
-    );
-
-    return localDate.toLocaleDateString("en-AU", {
-      timeZone: "UTC",
-      weekday: "long",
-      day: "numeric",
-      month: "long"
-    });
-  }
-
-  function weatherDescription(description) {
-    if (!description) return "Conditions unavailable";
-
-    return description.charAt(0).toUpperCase() +
-      description.slice(1);
-  }
-
-  // ------------------------------------------
-  // CACHE
-  // ------------------------------------------
-
-  function saveCache(data) {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.warn("Weather cache could not be saved.", error);
-    }
-  }
-
-  function readCache() {
-    try {
-      const saved = localStorage.getItem(CACHE_KEY);
-
-      if (!saved) return null;
-
-      const data = JSON.parse(saved);
-
-      if (!data.weather ||
-          !Number.isFinite(data.updatedAt) ||
-          data.updatedAt > Date.now()) {
-        return null;
-      }
-
-      return data;
-
-    } catch (error) {
-      console.warn("Weather cache could not be read.", error);
+    if (!saved) {
       return null;
     }
-  }
 
-  function cacheIsFresh() {
-    if (!lastUpdated) return false;
+    var data = JSON.parse(saved);
 
-    const age = Date.now() - lastUpdated;
-
-    return age < REFRESH_INTERVAL;
-  }
-
-  // ------------------------------------------
-  // DISPLAY WEATHER
-  // ------------------------------------------
-
-  function displayWeather(weather) {
-    $("date").textContent = formatDate(
-      weather.timestamp,
-      weather.timezoneOffset
-    );
-
-    $("temperature").textContent =
-      numberWithUnit(weather.temperature, "°C");
-
-    $("description").textContent =
-      weather.description || "Conditions unavailable";
-
-    $("feels").textContent =
-      `Feels like ${numberWithUnit(weather.feelsLike, "°C")}`;
-
-    $("humidity").textContent =
-      numberWithUnit(weather.humidity, "%");
-
-    $("wind").textContent =
-      numberWithUnit(weather.wind, " km/h");
-
-    $("rain").textContent =
-      weather.rain == null
-        ? "—"
-        : `${Number(weather.rain).toFixed(1)} mm`;
-  }
-
-  // ------------------------------------------
-  // STATUS
-  // ------------------------------------------
-
-  function updateStatus() {
-    const status = $("status");
-
-    if (!lastUpdated) {
-      status.textContent = lastError
-        ? "Weather unavailable. Waiting to retry."
-        : "Waiting for weather data...";
-      return;
+    if (!data.weather ||
+        !isFinite(data.updatedAt) ||
+        data.updatedAt > new Date().getTime()) {
+      return null;
     }
 
-    const time = formatTime(lastUpdated);
-    const age = Date.now() - lastUpdated;
+    return data;
 
-    const freshness =
-      age >= REFRESH_INTERVAL * 2
-        ? "STALE DATA · Last updated"
-        : "Last updated";
+  } catch (error) {
+    console.log("Could not read weather cache.");
+    return null;
+  }
+}
 
-    if (!navigator.onLine) {
-      status.textContent =
-        `OFFLINE · ${freshness} ${time}`;
-    } else if (lastError) {
-      status.textContent =
-        `UPDATE FAILED · Showing saved weather · ${freshness} ${time}`;
-    } else {
-      status.textContent =
-        `${freshness} ${time} · OpenWeather`;
-    }
+function cacheIsFresh() {
+  if (!lastUpdated) {
+    return false;
   }
 
-  // ------------------------------------------
-  // AUTOMATIC REFRESH SCHEDULING
-  // ------------------------------------------
+  return (
+    new Date().getTime() - lastUpdated <
+    REFRESH_INTERVAL
+  );
+}
 
-  function scheduleRefresh() {
+// ==========================================
+// DISPLAY
+// ==========================================
+
+function displayWeather(weather) {
+
+  $("date").textContent = formatDate(
+    weather.timestamp,
+    weather.timezoneOffset
+  );
+
+  $("temperature").textContent =
+    numberWithUnit(weather.temperature, "°C");
+
+  $("description").textContent =
+    weather.description || "Conditions unavailable";
+
+  $("feels").textContent =
+    "Feels like " +
+    numberWithUnit(weather.feelsLike, "°C");
+
+  $("humidity").textContent =
+    numberWithUnit(weather.humidity, "%");
+
+  $("wind").textContent =
+    numberWithUnit(weather.wind, " km/h");
+
+  $("rain").textContent =
+    weather.rain === null
+      ? "—"
+      : Number(weather.rain).toFixed(1) + " mm";
+}
+
+// ==========================================
+// STATUS
+// ==========================================
+
+function updateStatus() {
+
+  if (!lastUpdated) {
+    $("status").textContent = lastError
+      ? "Weather unavailable. Waiting to retry."
+      : "Waiting for weather data.";
+
+    return;
+  }
+
+  var age = new Date().getTime() - lastUpdated;
+  var time = formatTime(lastUpdated);
+
+  var freshness = age >= REFRESH_INTERVAL * 2
+    ? "STALE DATA - Last updated"
+    : "Last updated";
+
+  if (!navigator.onLine) {
+
+    $("status").textContent =
+      "OFFLINE - " + freshness + " " + time;
+
+  } else if (lastError) {
+
+    $("status").textContent =
+      "UPDATE FAILED - Showing saved weather - " +
+      freshness + " " + time;
+
+  } else {
+
+    $("status").textContent =
+      freshness + " " + time + " - OpenWeather";
+  }
+}
+
+// ==========================================
+// REFRESH SCHEDULING
+// ==========================================
+
+function scheduleRefresh() {
+
+  if (refreshTimer) {
     clearTimeout(refreshTimer);
-
-    if (!lastUpdated) {
-      refreshTimer = setTimeout(
-        () => loadWeather(),
-        REFRESH_INTERVAL
-      );
-      return;
-    }
-
-    // Schedule based on the last successful API update.
-    const age = Date.now() - lastUpdated;
-
-    const remaining = Math.max(
-      0,
-      REFRESH_INTERVAL - age
-    );
-
-    refreshTimer = setTimeout(
-      () => loadWeather(),
-      remaining
-    );
   }
 
-  // ------------------------------------------
-  // FETCH WEATHER
-  // ------------------------------------------
+  var delay = REFRESH_INTERVAL;
 
-  async function loadWeather(forceRefresh = false) {
-    if (loading) return;
+  if (lastUpdated) {
+    var age = new Date().getTime() - lastUpdated;
 
-    // Avoid API calls when the cache is still valid.
-    if (!forceRefresh && cacheIsFresh()) {
-      updateStatus();
-      scheduleRefresh();
+    delay = Math.max(0, REFRESH_INTERVAL - age);
+  }
+
+  refreshTimer = setTimeout(function() {
+    loadWeather(false);
+  }, delay);
+}
+
+// ==========================================
+// WEATHER REQUEST
+// Uses XMLHttpRequest instead of fetch()
+// ==========================================
+
+function loadWeather(forceRefresh) {
+
+  if (loading) {
+    return;
+  }
+
+  if (!forceRefresh && cacheIsFresh()) {
+    updateStatus();
+    scheduleRefresh();
+    return;
+  }
+
+  if (!navigator.onLine) {
+    lastError = true;
+    updateStatus();
+    scheduleRefresh();
+    return;
+  }
+
+  if (!API_KEY ||
+      API_KEY === "YOUR_OPENWEATHER_API_KEY") {
+
+    $("status").textContent =
+      "Please add your OpenWeather API key.";
+
+    return;
+  }
+
+  loading = true;
+
+  $("refreshButton").disabled = true;
+
+  $("status").textContent = lastUpdated
+    ? "Checking for updated weather..."
+    : "Downloading weather...";
+
+  var xhr = new XMLHttpRequest();
+
+  var url = WEATHER_URL +
+    "?lat=" + encodeURIComponent(LATITUDE) +
+    "&lon=" + encodeURIComponent(LONGITUDE) +
+    "&appid=" + encodeURIComponent(API_KEY) +
+    "&units=metric";
+
+  xhr.open("GET", url, true);
+
+  xhr.timeout = 20000;
+
+  xhr.onreadystatechange = function() {
+
+    if (xhr.readyState !== 4) {
       return;
     }
 
-    if (!navigator.onLine) {
-      updateStatus();
-      scheduleRefresh();
-      return;
-    }
+    loading = false;
 
-    if (!API_KEY || API_KEY === "YOUR_OPENWEATHER_API_KEY") {
-      $("status").textContent =
-        "Please add your OpenWeather API key.";
-      return;
-    }
+    $("refreshButton").disabled = false;
 
-    loading = true;
-    $("refreshButton").disabled = true;
+    if (xhr.status === 200) {
 
-    $("status").textContent = lastUpdated
-      ? "Checking for updated weather..."
-      : "Downloading weather...";
+      try {
 
-    const controller = new AbortController();
+        var data = JSON.parse(xhr.responseText);
 
-    const timeout = setTimeout(
-      () => controller.abort(),
-      20000
-    );
+        if (!data.main ||
+            data.main.temp === null ||
+            !data.weather ||
+            !data.weather[0]) {
 
-    try {
-      const params = new URLSearchParams({
-        lat: LATITUDE,
-        lon: LONGITUDE,
-        appid: API_KEY,
-        units: "metric"
-      });
-
-      const response = await fetch(
-        `${WEATHER_URL}?${params}`,
-        {
-          signal: controller.signal,
-          cache: "no-store"
+          throw new Error("Incomplete weather response");
         }
+
+        var wind = null;
+
+        if (data.wind &&
+            data.wind.speed !== undefined) {
+
+          wind = data.wind.speed * 3.6;
+        }
+
+        var rain = null;
+
+        if (data.rain &&
+            data.rain["1h"] !== undefined) {
+
+          rain = data.rain["1h"];
+        }
+
+        var weather = {
+          temperature: data.main.temp,
+          feelsLike: data.main.feels_like,
+          humidity: data.main.humidity,
+          wind: wind,
+          rain: rain,
+
+          description: weatherDescription(
+            data.weather[0].description
+          ),
+
+          timestamp: data.dt,
+          timezoneOffset: data.timezone || 0
+        };
+
+        lastWeather = weather;
+        lastUpdated = new Date().getTime();
+        lastError = false;
+
+        displayWeather(weather);
+
+        saveCache({
+          weather: weather,
+          updatedAt: lastUpdated
+        });
+
+        updateStatus();
+
+      } catch (error) {
+
+        console.log("Weather data error:", error);
+
+        lastError = true;
+        updateStatus();
+      }
+
+    } else {
+
+      console.log(
+        "Weather request failed:",
+        xhr.status,
+        xhr.responseText
       );
-
-      if (!response.ok) {
-        throw new Error(
-          `OpenWeather returned ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-
-      if (!data.main ||
-          data.main.temp == null ||
-          !data.weather?.[0]) {
-        throw new Error("Weather response was incomplete.");
-      }
-
-      const weather = {
-        temperature: data.main.temp,
-        feelsLike: data.main.feels_like,
-        humidity: data.main.humidity,
-
-        // OpenWeather returns metres per second.
-        // Convert to kilometres per hour.
-        wind: data.wind?.speed != null
-          ? data.wind.speed * 3.6
-          : null,
-
-        // OpenWeather reports recent rainfall,
-        // not necessarily the total for the day.
-        rain: data.rain?.["1h"] ?? null,
-
-        description: weatherDescription(
-          data.weather[0].description
-        ),
-
-        timestamp: data.dt,
-        timezoneOffset: data.timezone ?? 0
-      };
-
-      const updatedAt = Date.now();
-
-      // Only update the dashboard after a successful response.
-      lastWeather = weather;
-      lastUpdated = updatedAt;
-      lastError = false;
-
-      displayWeather(weather);
-
-      saveCache({
-        weather,
-        updatedAt
-      });
-
-      updateStatus();
-
-    } catch (error) {
-      console.warn("Weather update failed:", error);
 
       lastError = true;
       updateStatus();
-
-    } finally {
-      clearTimeout(timeout);
-
-      loading = false;
-      $("refreshButton").disabled = false;
-
-      scheduleRefresh();
-    }
-  }
-
-  // ------------------------------------------
-  // STARTUP
-  // ------------------------------------------
-
-  function startDashboard() {
-    const cached = readCache();
-
-    if (cached) {
-      lastWeather = cached.weather;
-      lastUpdated = cached.updatedAt;
-
-      displayWeather(lastWeather);
-      updateStatus();
     }
 
-    // Fresh cache: no API call.
-    // Expired cache: fetch new weather.
-    loadWeather();
-  }
+    scheduleRefresh();
+  };
 
-  // Manual refresh bypasses the cache.
-  $("refreshButton").addEventListener(
-    "click",
-    () => loadWeather(true)
-  );
+  xhr.onerror = function() {
 
-  // Retry when internet connectivity returns.
-  window.addEventListener("online", () => {
-    loadWeather();
-  });
+    loading = false;
+    $("refreshButton").disabled = false;
 
-  window.addEventListener("offline", () => {
+    lastError = true;
     updateStatus();
-  });
 
-  startDashboard();
+    scheduleRefresh();
+  };
+
+  xhr.ontimeout = function() {
+
+    loading = false;
+    $("refreshButton").disabled = false;
+
+    lastError = true;
+    updateStatus();
+
+    scheduleRefresh();
+  };
+
+  try {
+
+    xhr.send(null);
+
+  } catch (error) {
+
+    loading = false;
+    $("refreshButton").disabled = false;
+
+    lastError = true;
+    updateStatus();
+
+    scheduleRefresh();
+  }
+}
+
+// ==========================================
+// STARTUP
+// ==========================================
+
+function startDashboard() {
+
+  var cached = readCache();
+
+  if (cached) {
+
+    lastWeather = cached.weather;
+    lastUpdated = cached.updatedAt;
+
+    displayWeather(lastWeather);
+    updateStatus();
+  }
+
+  loadWeather(false);
+}
+
+// ==========================================
+// BUTTON AND CONNECTIVITY EVENTS
+// ==========================================
+
+$("refreshButton").addEventListener(
+  "click",
+  function() {
+    loadWeather(true);
+  }
+);
+
+window.addEventListener("online", function() {
+  loadWeather(false);
+});
+
+window.addEventListener("offline", function() {
+  lastError = true;
+  updateStatus();
+});
+
+startDashboard();
+
 </script>
+
 </body>
 </html>
-
